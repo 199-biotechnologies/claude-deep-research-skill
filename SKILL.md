@@ -51,20 +51,23 @@ Validation Gate
 
 ## Workflow (Clarify → Plan → Act → Verify → Report)
 
-### 1. Clarify (Conditional)
+**AUTONOMY PRINCIPLE:** This skill operates independently. Proceed with reasonable assumptions. Only stop for critical errors or genuinely incomprehensible queries.
 
-**When to ask:**
-- Question ambiguous or vague
-- Scope unclear (too broad/narrow)
-- Mode unspecified for complex topics
-- Time constraints critical
+### 1. Clarify (Rarely Needed - Prefer Autonomy)
 
-**Questions to ask:**
-- "What's the primary decision you're trying to make?"
-- "Technical, business, or both?"
-- "Specific perspectives or sources required?"
+**DEFAULT: Proceed autonomously. Make reasonable assumptions based on query context.**
 
-**Skip if:** Query is clear and self-contained.
+**ONLY ask if CRITICALLY ambiguous:**
+- Query is genuinely incomprehensible (e.g., "research the thing")
+- Contradictory requirements (e.g., "quick 50-source ultradeep analysis")
+
+**When in doubt: PROCEED with standard mode. User can redirect if needed.**
+
+**Good autonomous assumptions:**
+- Technical query → Assume technical audience
+- Comparison query → Assume balanced perspective needed
+- Trend query → Assume recent 1-2 years unless specified
+- Standard mode is default for most queries
 
 ---
 
@@ -76,10 +79,10 @@ Validation Gate
 - **Deep** (10-20 min): Important decisions, need thorough verification
 - **UltraDeep** (20-45 min): Critical analysis, maximum rigor
 
-**Preview scope if:**
-- Mode is deep/ultradeep
-- Topic highly specialized
-- User requests preview
+**Announce plan (then proceed immediately):**
+- Briefly state: selected mode, estimated time, number of sources
+- Example: "Starting standard mode research (5-10 min, 15-30 sources)"
+- NO need to wait for approval - proceed directly to execution
 
 ---
 
