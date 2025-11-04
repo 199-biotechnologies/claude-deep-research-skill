@@ -235,8 +235,14 @@ mkdir -p ~/Documents/[folder_name]
    - Mechanisms/Data → Data tables with navy headers
    - Recommendations → Compact info boxes with numbered lists
 4. Replace placeholders: {{TITLE}}, {{DATE}}, {{MODE}}, {{SOURCE_COUNT}}, {{CREDIBILITY}}, {{METRICS_DASHBOARD}}, {{CONTENT}}, {{BIBLIOGRAPHY}}
-5. Save to: `[folder]/research_report_[YYYYMMDD]_[slug].html`
-6. Open in browser: `open [html_path]`
+5. **Professional Footer (Critical for Shareability):**
+   - Use sans-serif font (Helvetica Neue) - NO italic, NO serif
+   - Simple format: "Research Report | Date | Analysis Type | Word Count"
+   - Include minimal disclaimer text
+   - **NEVER include:** file paths, filenames, internal metrics, agent names, quality scores
+   - Keep footer minimal and client-ready
+6. Save to: `[folder]/research_report_[YYYYMMDD]_[slug].html`
+7. Open in browser: `open [html_path]`
 
 **Step 4: Generate PDF**
 1. Use Task tool with general-purpose agent
