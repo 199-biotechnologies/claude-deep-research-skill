@@ -222,11 +222,18 @@ All files use same base name for easy matching:
 - DO NOT write summaries - write FULL analysis
 
 **Writing Standards:**
+- **Narrative-driven**: Write in flowing prose. Each finding tells a story with beginning (context), middle (evidence), end (implications)
 - **Precision**: Every word deliberately chosen, carries intention
 - **Economy**: No fluff, eliminate fancy grammar, unnecessary modifiers
-- **Clarity**: Exact numbers ("23% reduction"), not vague ("significant improvement")
+- **Clarity**: Exact numbers embedded in sentences ("The study demonstrated a 23% reduction in mortality"), not isolated in bullets
 - **Directness**: State findings without embellishment
 - **High signal-to-noise**: Dense information, respect reader's time
+
+**Bullet Point Policy:**
+- Use bullets SPARINGLY: Only for distinct lists (product names, company roster, enumerated steps)
+- NEVER use bullets as primary content delivery - they fragment thinking
+- Each section requires substantive prose paragraphs (3-5 paragraphs minimum per finding)
+- Example: Instead of "• Market size: $2.4B" write "The global market reached $2.4 billion in 2023, driven by increasing consumer demand and regulatory tailwinds [1]."
 
 **Source Attribution Standards (Critical for Preventing Fabrication):**
 - **Immediate citation**: Every factual claim followed by [N] citation in same sentence
@@ -272,11 +279,14 @@ mkdir -p ~/Documents/[folder_name]
 **Step 3: Generate HTML (McKinsey Style)**
 1. Read McKinsey template from `./templates/mckinsey_report_template.html`
 2. Extract 3-4 key quantitative metrics from findings for dashboard
-3. Convert markdown to HTML with McKinsey formatting:
-   - Executive Summary → Brief summary box (highlight key findings in bold)
-   - Main Findings → 2-column grid of compact finding cards
-   - Mechanisms/Data → Data tables with navy headers
-   - Recommendations → Compact info boxes with numbered lists
+3. Convert FULL markdown to HTML (use Python script for proper conversion):
+   - Convert ALL sections including bibliography
+   - Bibliography entries: format each [N] citation as separate `<div class="bib-entry">` with hanging indent
+   - URLs in bibliography: make clickable with `<a href="..." target="_blank">`
+   - Headers: ## → `<h2 class="section-title">`, ### → `<h3 class="subsection-title">`
+   - Citations in text: [1], [2] → `<span class="citation">[N]</span>`
+   - Lists: convert markdown bullets to `<ul><li>` properly
+   - Paragraphs: wrap non-HTML lines in `<p>` tags
 4. Replace placeholders: {{TITLE}}, {{DATE}}, {{MODE}}, {{SOURCE_COUNT}}, {{CREDIBILITY}}, {{METRICS_DASHBOARD}}, {{CONTENT}}, {{BIBLIOGRAPHY}}
 5. **Minimal Footer (Critical):**
    - **DEFAULT:** Page numbers only: "Page X of Y"
@@ -323,15 +333,18 @@ mkdir -p ~/Documents/[folder_name]
 - **Vague statements without specific evidence**
 
 **Writing Standards (Critical):**
+- **Narrative-driven**: Write in flowing prose with complete sentences that build understanding progressively
 - **Precision**: Choose each word deliberately - every word must carry intention
 - **Economy**: Eliminate fluff, unnecessary adjectives, fancy grammar
-- **Clarity**: Use precise technical terms, avoid ambiguity
+- **Clarity**: Use precise technical terms, avoid ambiguity. Embed exact numbers in sentences, not bullets
 - **Directness**: State findings clearly without embellishment
 - **Signal-to-noise**: High information density, respect reader's time
+- **Bullet discipline**: Use bullets only for distinct lists (products, companies, steps). Default to prose paragraphs
 - **Examples of precision**:
   - Bad: "significantly improved outcomes" → Good: "reduced mortality 23% (p<0.01)"
   - Bad: "several studies suggest" → Good: "5 RCTs (n=1,847) show"
   - Bad: "potentially beneficial" → Good: "increased biomarker X by 15%"
+  - Bad: "• Market: $2.4B" → Good: "The market reached $2.4 billion in 2023, driven by consumer demand [1]."
 
 **Quality gates (enforced by validator):**
 - Minimum 2,000 words (standard mode)

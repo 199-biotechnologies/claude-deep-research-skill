@@ -211,23 +211,38 @@
 
         .bibliography {
             background: #f8f9fa;
-            padding: 25px;
-            margin-top: 30px;
-            font-size: 12px;
+            padding: 30px;
+            margin-top: 40px;
+            border-left: 4px solid #003d5c;
         }
 
-        /* Footer removed - minimal design, no unnecessary text */
+        .bibliography-content {
+            background: #f8f9fa;
+            padding: 20px 0;
+        }
 
         .bib-entry {
-            margin-bottom: 12px;
-            padding-left: 20px;
-            text-indent: -20px;
-            line-height: 1.5;
+            margin-bottom: 18px;
+            padding-left: 50px;
+            text-indent: -50px;
+            line-height: 1.6;
+            font-size: 13px;
+        }
+
+        .bib-number {
+            color: #003d5c;
+            font-weight: 700;
+            margin-right: 8px;
         }
 
         .bib-entry a {
             color: #003d5c;
-            word-break: break-all;
+            word-wrap: break-word;
+            text-decoration: none;
+        }
+
+        .bib-entry a:hover {
+            text-decoration: underline;
         }
 
         .compact-list {
