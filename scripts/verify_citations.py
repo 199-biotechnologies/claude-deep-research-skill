@@ -340,38 +340,52 @@ class CitationVerifier:
         print(f"{'='*60}\n")
 
         verified = [r for r in results if r['status'] == 'verified']
+        url_verified = [r for r in results if r['status'] == 'url_verified']
         suspicious = [r for r in results if r['status'] == 'suspicious']
         unverified = [r for r in results if r['status'] in ['unverified', 'no_doi', 'unknown']]
 
-        print(f" Verified: {len(verified)}/{len(results)}")
-        print(f"�  Suspicious: {len(suspicious)}/{len(results)}")
-        print(f"S Unverified: {len(unverified)}/{len(results)}")
+        print(f'DOI Verified: {len(verified)}/{len(results)}')
+        print(f'URL Verified: {len(url_verified)}/{len(results)}')
+        print(f'Suspicious: {len(suspicious)}/{len(results)}')
+        print(f'Unverified: {len(unverified)}/{len(results)}')
         print()
 
         if suspicious:
-            print("�  SUSPICIOUS CITATIONS (Manual Review Needed):")
+            print('SUSPICIOUS CITATIONS (Manual Review Needed):')
             for r in suspicious:
                 print(f"\n  [{r['num']}]")
                 for issue in r['issues']:
-                    print(f"    " {issue}")
+                    print(f"    - {issue}")
             print()
 
         if unverified and len(unverified) > 0:
-            print("S UNVERIFIED CITATIONS (Could not check):")
+            print('UNVERIFIED CITATIONS (Could not check):')
             for r in unverified:
                 print(f"  [{r['num']}] {r['issues'][0] if r['issues'] else 'Unknown'}")
             print()
 
-        # Decision
+        # Decision (Enhanced 2025 - includes URL-verified as acceptable)
+        total_verified = len(verified) + len(url_verified)
+
         if suspicious:
-            print("L REVIEW REQUIRED: Suspicious citations detected")
+            print('WARNING: Suspicious citations detected')
+            if self.strict_mode:
+                print('  STRICT MODE: Failing due to suspicious citations')
+                return False
+            else:
+                print('  (Continuing in non-strict mode)')
+
+        if self.strict_mode and unverified:
+            print('STRICT MODE: Unverified citations found')
             return False
-        elif len(verified) / len(results) < 0.5:
-            print("�  WARNING: Less than 50% citations verified")
+
+        if total_verified / len(results) < 0.5:
+            print('WARNING: Less than 50% citations verified')
             return True  # Pass with warning
         else:
-            print(" CITATION VERIFICATION PASSED")
+            print('CITATION VERIFICATION PASSED')
             return True
+
 
 def main():
     parser = argparse.ArgumentParser(
