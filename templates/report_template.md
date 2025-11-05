@@ -1,11 +1,55 @@
 # Research Report: [Topic]
 
-<!-- IMPORTANT: This report should be COMPREHENSIVE and DETAILED -->
-<!-- Target length: 2,000-5,000 words minimum for standard mode -->
-<!-- Target length: 5,000-10,000 words for deep/ultradeep mode -->
-<!-- Do NOT write summaries - write FULL detailed analysis -->
+<!-- =============================================================================
+PROGRESSIVE FILE ASSEMBLY STRATEGY (2025 - Unlimited Length):
 
-<!-- WRITING STANDARDS: -->
+This report is generated section-by-section using progressive file assembly.
+Each section is generated to APPROPRIATE depth (however many words needed) and
+written to file immediately using Write/Edit tools.
+
+WHY: Avoids output token limits while maintaining quality throughout
+RESULT: Unlimited report length - sections sized naturally by content needs
+
+GENERATION WORKFLOW:
+1. Generate Executive Summary → Write to file
+   (As long as needed for comprehensive summary)
+
+2. Generate Introduction → Edit/append to file
+   (As long as needed to establish context)
+
+3. Generate Finding 1 → Edit/append to file
+   (As long as needed to fully present evidence and analysis)
+
+4. Generate Finding 2 → Edit/append to file
+   (Each finding sized appropriately - some may need 300 words, others 1,500)
+
+5. Continue for ALL findings (no limit on number OR length per finding!)
+
+6. Generate Synthesis → Edit/append to file
+   (As long as needed for deep synthesis)
+
+7. Generate Limitations → Edit/append to file
+8. Generate Recommendations → Edit/append to file
+9. Generate Bibliography (ALL citations) → Edit/append to file
+10. Generate Methodology → Edit/append to file
+
+SIZING PRINCIPLE:
+- Each section should be as long as IT NEEDS TO BE
+- Simple finding? Maybe 400 words is enough
+- Complex multi-faceted finding? Could be 1,200 words
+- Let evidence and analysis determine length, not arbitrary targets
+- Only constraint: Keep each INDIVIDUAL generation under ~2,000 words to avoid output limits
+- If a section needs >2,000 words, break it into subsections and generate progressively
+
+CITATION TRACKING (CRITICAL):
+- Maintain running list in working memory: citations_used = [1, 2, 3, ...]
+- After each section: Add new citations to list
+- In Bibliography: Generate entry for EVERY citation in final list
+- NO gaps, NO ranges, NO placeholders
+
+============================================================================= -->
+
+<!-- WRITING STANDARDS (Apply to EACH section): -->
 <!-- - PRECISION: Each word deliberately chosen, carries intention -->
 <!-- - ECONOMY: No fluff, eliminate fancy grammar, unnecessary adjectives -->
 <!-- - CLARITY: Use exact numbers, specific data, precise technical terms -->
@@ -23,6 +67,12 @@
 <!-- NO vague attributions like "research suggests" or "experts believe" -->
 <!-- ADMIT uncertainty: "No sources found for X" not fabricated citations -->
 <!-- LABEL speculation: "This suggests..." not "Research shows..." -->
+
+<!-- ANTI-TRUNCATION (CRITICAL - Each Section Must Be COMPLETE): -->
+<!-- ❌ FORBIDDEN: "Content continues...", "Due to length...", "[Sections X-Y...]" -->
+<!-- ✅ REQUIRED: Generate current section COMPLETELY (you're only writing 500 words!) -->
+<!-- ✅ REQUIRED: Write to file immediately, then move to next section -->
+<!-- Progressive assembly handles unlimited length - you handle quality per section -->
 
 ## Executive Summary
 

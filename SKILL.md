@@ -243,18 +243,23 @@ All files use same base name for easy matching:
 - `research_report_20251104_psilocybin_2025.html`
 - `research_report_20251104_psilocybin_2025.pdf`
 
-**Length Requirements:**
-- Quick mode: 1,000-2,000 words minimum
-- Standard mode: 2,000-5,000 words minimum
-- Deep mode: 3,000-7,000 words minimum
-- UltraDeep mode: 5,000-10,000 words minimum
+**Length Requirements (UNLIMITED with Progressive Assembly):**
+- Quick mode: 2,000+ words (baseline quality threshold)
+- Standard mode: 4,000+ words (comprehensive analysis)
+- Deep mode: 6,000+ words (thorough investigation)
+- UltraDeep mode: 10,000-50,000+ words (NO UPPER LIMIT - as comprehensive as evidence warrants)
+
+**How Unlimited Length Works:**
+Progressive file assembly allows ANY report length by generating section-by-section.
+Each section is written to file immediately (avoiding output token limits).
+Complex topics with many findings? Generate 20, 30, 50+ findings - no constraint!
 
 **Content Requirements:**
 - Use [template](./templates/report_template.md) as exact structure
-- Write 4-8 detailed findings (300-500 words each)
+- Generate each section to APPROPRIATE depth (determined by evidence, not word targets)
 - Include specific data, statistics, dates, numbers (not vague statements)
-- Multiple paragraphs per finding with evidence
-- Synthesis section 500-1000 words
+- Multiple paragraphs per finding with evidence (as many as needed)
+- Each section gets focused generation attention
 - DO NOT write summaries - write FULL analysis
 
 **Writing Standards:**
@@ -265,11 +270,21 @@ All files use same base name for easy matching:
 - **Directness**: State findings without embellishment
 - **High signal-to-noise**: Dense information, respect reader's time
 
-**Bullet Point Policy:**
+**Bullet Point Policy (Anti-Fatigue Enforcement):**
 - Use bullets SPARINGLY: Only for distinct lists (product names, company roster, enumerated steps)
 - NEVER use bullets as primary content delivery - they fragment thinking
-- Each section requires substantive prose paragraphs (3-5 paragraphs minimum per finding)
+- Each findings section requires substantive prose paragraphs (3-5+ paragraphs minimum)
 - Example: Instead of "• Market size: $2.4B" write "The global market reached $2.4 billion in 2023, driven by increasing consumer demand and regulatory tailwinds [1]."
+
+**Anti-Fatigue Quality Check (Apply to EVERY Section):**
+Before considering a section complete, verify:
+- [ ] **Paragraph count**: ≥3 paragraphs for major sections (## headings)
+- [ ] **Prose-first**: <20% of content is bullet points (≥80% must be flowing prose)
+- [ ] **No placeholders**: Zero instances of "Content continues", "Due to length", "[Sections X-Y]"
+- [ ] **Evidence-rich**: Specific data points, statistics, quotes (not vague statements)
+- [ ] **Citation density**: Major claims cited within same sentence
+
+**If ANY check fails:** Regenerate the section before moving to next.
 
 **Source Attribution Standards (Critical for Preventing Fabrication):**
 - **Immediate citation**: Every factual claim followed by [N] citation in same sentence
@@ -298,19 +313,105 @@ All files use same base name for easy matching:
 4. Source quality assessment summary (source count)
 5. Next steps (if relevant)
 
-**Generation Workflow (Execute in Order):**
+**Generation Workflow: Progressive File Assembly (Unlimited Length)**
 
-**Create Folder**
+**Phase 8.1: Setup**
 ```bash
 # Extract topic slug from research question
 # Create folder: ~/Documents/[TopicName]_Research_[YYYYMMDD]/
 mkdir -p ~/Documents/[folder_name]
+
+# Create initial markdown file with frontmatter
+# File path: [folder]/research_report_[YYYYMMDD]_[slug].md
 ```
 
-**Generate Markdown**
-- Write comprehensive report using [template](./templates/report_template.md)
-- Save to: `[folder]/research_report_[YYYYMMDD]_[slug].md`
-- Also save copy to: `~/.claude/research_output/` (internal tracking)
+**Phase 8.2: Progressive Section Generation**
+
+**CRITICAL STRATEGY:** Generate and write each section individually to file using Write/Edit tools.
+This allows unlimited report length while keeping each generation manageable.
+
+**Initialize Citation Tracking:**
+```
+citations_used = []  # Maintain this list in working memory throughout
+```
+
+**Section Generation Loop:**
+
+1. **Executive Summary**
+   - Generate: Comprehensive summary (as long as needed, typically 200-300 words)
+   - Tool: Write initial file content
+   - Track: Extract citations [N], append to citations_used list
+   - Progress: "Generated Executive Summary ✓"
+
+2. **Introduction**
+   - Generate: Context, research question, scope (as long as needed)
+   - Tool: Edit file (append to existing content)
+   - Track: Extract new citations, append to citations_used
+   - Progress: "Generated Introduction ✓"
+
+3. **Main Analysis - Finding Generation Loop**
+
+   FOR EACH finding (number determined in Phase 2 PLAN):
+     a. Generate finding section completely
+        - Length: As appropriate for evidence (could be 400 words, could be 1,500 words)
+        - Structure: Opening paragraph + evidence paragraphs + implications
+        - Style: 3-5+ paragraphs of narrative prose (NOT bullets)
+        - Data: Specific numbers, statistics, quotes with citations
+
+     b. Write to file immediately
+        - Tool: Edit (append to file)
+        - Track: Extract citations used, append to citations_used
+
+     c. Report progress
+        - Example: "Generated Finding 3 of 12 ✓ (847 words, citations [15]-[21])"
+
+     d. Move to next finding
+
+   **No limit on number of findings!** Generate as many as evidence supports.
+   If topic requires 30 findings for comprehensive coverage, generate all 30.
+
+4. **Synthesis & Insights**
+   - Generate: Novel insights beyond source statements (as long as needed for synthesis)
+   - Tool: Edit (append to file)
+   - Track: Extract citations, append to citations_used
+   - Progress: "Generated Synthesis ✓"
+
+5. **Limitations & Caveats**
+   - Generate: Counterevidence, gaps, uncertainties (appropriate depth)
+   - Tool: Edit (append to file)
+   - Track: Extract citations, append to citations_used
+   - Progress: "Generated Limitations ✓"
+
+6. **Recommendations**
+   - Generate: Immediate actions, next steps, research needs (appropriate depth)
+   - Tool: Edit (append to file)
+   - Track: Extract citations, append to citations_used
+   - Progress: "Generated Recommendations ✓"
+
+7. **Bibliography (CRITICAL - ALL Citations)**
+   - Generate: COMPLETE bibliography with EVERY citation from citations_used list
+   - Format: [1], [2], [3]... [N] - each citation gets full entry
+   - Verification: Check citations_used list - if list contains [1] through [73], generate all 73 entries
+   - NO ranges ([1-50]), NO placeholders ("Additional citations"), NO truncation
+   - Tool: Edit (append to file)
+   - Progress: "Generated Bibliography ✓ (N citations)"
+
+8. **Methodology Appendix**
+   - Generate: Research process, verification approach (appropriate depth)
+   - Tool: Edit (append to file)
+   - Progress: "Generated Methodology ✓"
+
+**Phase 8.3: Verify Complete Report**
+- Read final assembled markdown file
+- Count sections (verify all present)
+- Check for truncation patterns (validate no placeholders)
+- Confirm citations_used matches bibliography entries
+- Save copy to: `~/.claude/research_output/` (internal tracking)
+
+**Anti-Fatigue Built-In:**
+Because each section is generated independently with focused attention,
+quality remains high throughout. No cognitive overload from generating
+20,000 words in one shot. Each 500-1,500 word generation is manageable.
 
 **Generate HTML (McKinsey Style)**
 1. Read McKinsey template from `./templates/mckinsey_report_template.html`

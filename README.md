@@ -9,12 +9,14 @@ A comprehensive research engine that brings Claude Desktop's Advanced Research c
 - **Multiple Research Modes**: Quick, Standard, Deep, and UltraDeep
 - **Graph-of-Thoughts Reasoning**: Non-linear exploration with branching thought paths
 
-### 2025 Enhancements (Latest)
+### 2025 Enhancements (Latest - v2.1)
+- **📄 Progressive File Assembly (NEW)**: **UNLIMITED report length** (4K, 10K, 20K, 50K+ words) via section-by-section generation
 - **⚡ Parallel Search Execution**: 5-10 concurrent searches + parallel agents (3-5x faster Phase 3)
 - **🎯 First Finish Search (FFS) Pattern**: Adaptive completion based on quality thresholds
 - **🔍 Enhanced Citation Validation (CiteGuard)**: Hallucination detection, URL verification, multi-source cross-checking
 - **📋 Dynamic Outline Evolution (WebWeaver)**: Adapt structure after Phase 4 based on evidence
 - **🔗 Attribution Gradients UI**: Interactive citation tooltips showing evidence chains in HTML reports
+- **🛡️ Anti-Fatigue Enforcement**: Prose-first quality checks prevent bullet-point degradation
 
 ### Traditional Strengths
 - **Citation Management**: Automatic source tracking and bibliography generation
@@ -71,7 +73,7 @@ python ~/.claude/skills/deep-research/research_engine.py --query "Your research 
 
 ## Output
 
-Research reports are saved to: `~/.claude/research_output/`
+Research reports are saved to organized folders in `~/Documents/[Topic]_Research_[Date]/`
 
 Each report includes:
 - Executive Summary
@@ -81,6 +83,27 @@ Each report includes:
 - Recommendations
 - Full Bibliography
 - Methodology Appendix
+
+### Unlimited Report Length (2025 Progressive Assembly)
+
+Reports are generated using **progressive file assembly** - each section is written to file individually, allowing unlimited total length:
+
+- **Quick mode**: 2,000+ words
+- **Standard mode**: 4,000+ words
+- **Deep mode**: 6,000+ words
+- **UltraDeep mode**: 10,000-50,000+ words (**NO UPPER LIMIT**)
+
+How it works:
+1. Each section (Executive Summary, Introduction, Finding 1, Finding 2, etc.) is generated individually
+2. Sections are written to file immediately using Write/Edit tools
+3. Citations tracked continuously across all sections
+4. Final report assembled from all sections with complete bibliography
+
+Benefits:
+- ✅ No artificial word limits - reports sized by evidence needs
+- ✅ Maintains quality throughout (no cognitive fatigue)
+- ✅ Each section gets focused generation attention
+- ✅ Comprehensive topics with 30+ findings? No problem!
 
 ## Examples
 

@@ -41,6 +41,7 @@ class ReportValidator:
             ("Citations", self._check_citations),
             ("Bibliography", self._check_bibliography),
             ("Placeholder Text", self._check_placeholders),
+            ("Content Truncation", self._check_content_truncation),
             ("Word Count", self._check_word_count),
             ("Source Count", self._check_source_count),
             ("Broken Links", self._check_broken_references),
@@ -224,14 +225,32 @@ class ReportValidator:
 
         return True
 
+    def _check_content_truncation(self) -> bool:
+        """Check for content truncation patterns (2025 Progressive Assembly enhancement)"""
+        truncation_patterns = [
+            (r'Content continues', 'Phrase "Content continues"'),
+            (r'Due to length', 'Phrase "Due to length"'),
+            (r'would continue', 'Phrase "would continue"'),
+            (r'\[Sections \d+-\d+', 'Pattern "[Sections X-Y"'),
+            (r'Additional sections', 'Phrase "Additional sections"'),
+            (r'comprehensive.*word document that continues', 'Pattern "comprehensive...document that continues"'),
+        ]
+
+        for pattern_re, description in truncation_patterns:
+            if re.search(pattern_re, self.content, re.IGNORECASE):
+                self.errors.append(f"⚠️ CRITICAL: Content truncation detected: {description}")
+                self.errors.append(f"   Report is INCOMPLETE and UNUSABLE - regenerate with progressive assembly")
+                return False
+
+        return True
+
     def _check_word_count(self) -> bool:
         """Check overall report length"""
         word_count = len(self.content.split())
 
         if word_count < 500:
             self.warnings.append(f"Report is very short: {word_count} words (consider expanding)")
-        elif word_count > 10000:
-            self.warnings.append(f"Report is very long: {word_count} words (consider condensing)")
+        # No upper limit warning - progressive assembly supports unlimited lengths
 
         return True
 
