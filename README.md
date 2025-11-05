@@ -84,26 +84,34 @@ Each report includes:
 - Full Bibliography
 - Methodology Appendix
 
-### Unlimited Report Length (2025 Progressive Assembly)
+### Large Report Generation (2025 Progressive Assembly)
 
-Reports are generated using **progressive file assembly** - each section is written to file individually, allowing unlimited total length:
+Reports are generated using **progressive file assembly** - each section is written to file individually, managing Claude Code's output token limits effectively:
 
-- **Quick mode**: 2,000+ words
-- **Standard mode**: 4,000+ words
-- **Deep mode**: 6,000+ words
-- **UltraDeep mode**: 10,000-50,000+ words (**NO UPPER LIMIT**)
+**Per-Run Limits (Claude Code 32K token limit):**
+- **Quick mode**: 2,000-4,000 words ✅
+- **Standard mode**: 4,000-8,000 words ✅
+- **Deep mode**: 8,000-15,000 words ✅
+- **UltraDeep mode**: 15,000-20,000 words per run ⚠️ (at limit)
 
-How it works:
-1. Each section (Executive Summary, Introduction, Finding 1, Finding 2, etc.) is generated individually
-2. Sections are written to file immediately using Write/Edit tools
+**For reports >20,000 words:**
+Run the skill multiple times with different focus areas:
+- Run 1: "deep-research on X focusing on aspects A, B, C"
+- Run 2: "deep-research on X focusing on aspects D, E, F"
+- Combine outputs manually or ask Claude to merge files
+
+**How it works:**
+1. Each section (Executive Summary, Introduction, Finding 1, etc.) is generated individually
+2. Sections written to file immediately using Write/Edit tools (each ≤2,000 words)
 3. Citations tracked continuously across all sections
 4. Final report assembled from all sections with complete bibliography
+5. Total output stays under 32K token limit (≈20,000 words max)
 
-Benefits:
-- ✅ No artificial word limits - reports sized by evidence needs
+**Benefits:**
+- ✅ Respects Claude Code output limits while maximizing length
 - ✅ Maintains quality throughout (no cognitive fatigue)
 - ✅ Each section gets focused generation attention
-- ✅ Comprehensive topics with 30+ findings? No problem!
+- ✅ Progressive assembly prevents truncation
 
 ## Examples
 

@@ -330,6 +330,33 @@ mkdir -p ~/Documents/[folder_name]
 **CRITICAL STRATEGY:** Generate and write each section individually to file using Write/Edit tools.
 This allows unlimited report length while keeping each generation manageable.
 
+**OUTPUT TOKEN LIMIT SAFEGUARD (CRITICAL - Claude Code Default: 32K):**
+
+Claude Code default limit: 32,000 output tokens (≈24,000 words total per skill execution)
+This is a HARD LIMIT and cannot be changed within the skill.
+
+**What this means:**
+- Total output (your text + all tool call content) must be <32,000 tokens
+- 32,000 tokens ≈ 24,000 words max
+- Leave safety margin: Target ≤20,000 words total output
+
+**Realistic report sizes per mode:**
+- Quick mode: 2,000-4,000 words ✅ (well under limit)
+- Standard mode: 4,000-8,000 words ✅ (comfortably under limit)
+- Deep mode: 8,000-15,000 words ✅ (achievable with care)
+- UltraDeep mode: 15,000-20,000 words ⚠️ (at limit, monitor closely)
+
+**For reports >20,000 words:**
+User must run skill multiple times:
+- Run 1: "Generate Part 1 (sections 1-6)" → saves to part1.md
+- Run 2: "Generate Part 2 (sections 7-12)" → saves to part2.md
+- User manually combines or asks Claude to merge files
+
+**Per-section sizing to stay under limit:**
+- Keep each Write/Edit tool call ≤2,000 words
+- Limit: 10-12 sections max per skill run (12 sections × 1,500 words = 18,000 words)
+- If more sections needed, split across multiple skill runs
+
 **Initialize Citation Tracking:**
 ```
 citations_used = []  # Maintain this list in working memory throughout
@@ -337,38 +364,38 @@ citations_used = []  # Maintain this list in working memory throughout
 
 **Section Generation Loop:**
 
-1. **Executive Summary**
-   - Generate: Comprehensive summary (as long as needed, typically 200-300 words)
-   - Tool: Write initial file content
-   - Track: Extract citations [N], append to citations_used list
-   - Progress: "Generated Executive Summary ✓"
+**Pattern:** Generate section content → Use Write/Edit tool with that content → Move to next section
+Each Write/Edit call contains ONE section (≤2,000 words per call)
 
-2. **Introduction**
-   - Generate: Context, research question, scope (as long as needed)
-   - Tool: Edit file (append to existing content)
-   - Track: Extract new citations, append to citations_used
-   - Progress: "Generated Introduction ✓"
+1. **Executive Summary** (200-400 words)
+   - Generate section content
+   - Tool: Write(file, content=frontmatter + Executive Summary)
+   - Track citations used
+   - Progress: "✓ Executive Summary"
 
-3. **Main Analysis - Finding Generation Loop**
+2. **Introduction** (400-800 words)
+   - Generate section content
+   - Tool: Edit(file, old=last_line, new=old + Introduction section)
+   - Track citations used
+   - Progress: "✓ Introduction"
 
-   FOR EACH finding (number determined in Phase 2 PLAN):
-     a. Generate finding section completely
-        - Length: As appropriate for evidence (could be 400 words, could be 1,500 words)
-        - Structure: Opening paragraph + evidence paragraphs + implications
-        - Style: 3-5+ paragraphs of narrative prose (NOT bullets)
-        - Data: Specific numbers, statistics, quotes with citations
+3. **Finding 1** (600-2,000 words)
+   - Generate complete finding
+   - Tool: Edit(file, append Finding 1)
+   - Track citations used
+   - Progress: "✓ Finding 1"
 
-     b. Write to file immediately
-        - Tool: Edit (append to file)
-        - Track: Extract citations used, append to citations_used
+4. **Finding 2** (600-2,000 words)
+   - Generate complete finding
+   - Tool: Edit(file, append Finding 2)
+   - Track citations used
+   - Progress: "✓ Finding 2"
 
-     c. Report progress
-        - Example: "Generated Finding 3 of 12 ✓ (847 words, citations [15]-[21])"
+... Continue for ALL findings (each finding = one Edit tool call, ≤2,000 words)
 
-     d. Move to next finding
-
-   **No limit on number of findings!** Generate as many as evidence supports.
-   If topic requires 30 findings for comprehensive coverage, generate all 30.
+**CRITICAL:** If you have 10 findings × 1,500 words each = 15,000 words of findings
+This is OKAY because each Edit call is only 1,500 words (under 2,000 word limit per tool call)
+The FILE grows to 15,000 words, but no single tool call exceeds limits
 
 4. **Synthesis & Insights**
    - Generate: Novel insights beyond source statements (as long as needed for synthesis)

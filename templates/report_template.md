@@ -7,8 +7,11 @@ This report is generated section-by-section using progressive file assembly.
 Each section is generated to APPROPRIATE depth (however many words needed) and
 written to file immediately using Write/Edit tools.
 
-WHY: Avoids output token limits while maintaining quality throughout
-RESULT: Unlimited report length - sections sized naturally by content needs
+WHY: Manages output token limits while maintaining quality throughout
+RESULT: Large reports (up to 20,000 words per skill run) - sections sized naturally by content
+
+CLAUDE CODE LIMIT: 32,000 output tokens (≈20,000 words max per run)
+For reports >20,000 words: Run skill multiple times for different parts
 
 GENERATION WORKFLOW:
 1. Generate Executive Summary → Write to file
