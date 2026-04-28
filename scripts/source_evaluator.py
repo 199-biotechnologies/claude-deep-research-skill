@@ -139,7 +139,9 @@ class SourceEvaluator:
 
         try:
             pub_date = datetime.fromisoformat(publication_date.replace('Z', '+00:00'))
-            age = datetime.now() - pub_date
+            # If pub_date is timezone-aware, compare against tz-aware now to avoid TypeError.
+            now = datetime.now(pub_date.tzinfo) if pub_date.tzinfo else datetime.now()
+            age = now - pub_date
 
             # Recency scoring
             if age < timedelta(days=90):  # < 3 months

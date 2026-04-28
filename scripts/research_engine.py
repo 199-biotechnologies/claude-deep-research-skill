@@ -484,7 +484,7 @@ Save report to file with timestamp.
             result = self.execute_phase(phase)
 
             # Save state after each phase
-            state_file = self.output_dir / f"research_state_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            state_file = self.output_dir / f"research_state_{phase.value}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
             self.state.save(state_file)
             print(f"\n✓ Phase {phase.value} complete. State saved to: {state_file}\n")
 

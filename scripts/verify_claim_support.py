@@ -52,7 +52,7 @@ def write_jsonl(path: str, rows: list[dict]) -> None:
 NUMBER_RE = re.compile(r'\b\d+(?:\.\d+)?(?:%|x|X)?\b')
 
 # Extract year-like numbers
-YEAR_RE = re.compile(r'\b(19|20)\d{2}\b')
+YEAR_RE = re.compile(r'\b(?:19|20)\d{2}\b')
 
 # Extract capitalized entities (naive NER)
 ENTITY_RE = re.compile(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b')
