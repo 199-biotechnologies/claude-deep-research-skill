@@ -128,10 +128,12 @@ class ResearchState:
 class ResearchEngine:
     """Main research orchestration engine"""
 
-    def __init__(self, mode: ResearchMode = ResearchMode.STANDARD):
+    def __init__(self, mode: ResearchMode = ResearchMode.STANDARD, output_dir: Optional[Path] = None):
         self.mode = mode
         self.state: Optional[ResearchState] = None
-        self.output_dir = Path.home() / ".claude" / "research_output"
+        # State/reports default to ./research_output under the cwd so artifacts stay
+        # scoped to the topic folder the skill creates; pass --out-dir to override.
+        self.output_dir = Path(output_dir) if output_dir else Path.cwd() / "research_output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def initialize_research(self, query: str) -> ResearchState:
@@ -558,11 +560,21 @@ Examples:
         help='Resume from saved state file'
     )
 
+    parser.add_argument(
+        '--out-dir',
+        type=str,
+        default=None,
+        help='Directory for state files and reports (default: ./research_output in cwd)'
+    )
+
     args = parser.parse_args()
 
     # Initialize engine
     mode = ResearchMode(args.mode)
-    engine = ResearchEngine(mode=mode)
+    engine = ResearchEngine(
+        mode=mode,
+        output_dir=Path(args.out_dir) if args.out_dir else None,
+    )
 
     if args.resume:
         # Load previous state

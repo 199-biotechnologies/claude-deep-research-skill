@@ -53,7 +53,7 @@ Key features:
 
 ## Output
 
-Reports saved to `~/Documents/[Topic]_Research_[Date]/`:
+Reports saved to `./[topic]_[YYYYMMDD]/` (subdirectory of the cwd where the skill is invoked):
 - Markdown (primary source of truth)
 - HTML (McKinsey-style, auto-opened in browser)
 - PDF (professional print via WeasyPrint)
