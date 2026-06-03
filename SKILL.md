@@ -1,6 +1,10 @@
 ---
 name: deep-research
-description: Use when the user needs multi-source research with citation tracking, evidence persistence, and structured report generation. Triggers on "deep research", "comprehensive analysis", "research report", "compare X vs Y", "analyze trends", or "state of the art". Not for simple lookups, debugging, or questions answerable with 1-2 searches.
+description: >-
+  This skill should be used when the user asks for "deep research", "comprehensive analysis",
+  "research report", "compare X vs Y", "analyze trends", "state of the art", "thorough
+  investigation", "multi-source report", or "cited research". Produces citation-tracked reports
+  with evidence persistence. Not for simple lookups or questions answerable with 1-2 searches.
 ---
 
 # Deep Research
