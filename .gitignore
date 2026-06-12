@@ -29,3 +29,6 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Cloned external skills/repos (kept local)
+andrej-karpathy-skills/
