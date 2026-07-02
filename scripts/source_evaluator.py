@@ -117,7 +117,8 @@ class SourceEvaluator:
         parsed = urlparse(url)
         domain = parsed.netloc.lower()
         # Remove www prefix
-        domain = domain.replace('www.', '')
+        if domain.startswith('www.'):
+            domain = domain[4:]
         return domain
 
     def _evaluate_domain_authority(self, domain: str) -> float:
@@ -139,7 +140,8 @@ class SourceEvaluator:
 
         try:
             pub_date = datetime.fromisoformat(publication_date.replace('Z', '+00:00'))
-            age = datetime.now() - pub_date
+            # Match tz-awareness of pub_date so aware/naive subtraction never raises
+            age = datetime.now(pub_date.tzinfo) - pub_date
 
             # Recency scoring
             if age < timedelta(days=90):  # < 3 months
@@ -179,7 +181,7 @@ class SourceEvaluator:
 
         # Author credentials (if available)
         if author:
-            if any(title in author.lower() for title in ['dr.', 'phd', 'professor']):
+            if any(cred in author.lower() for cred in ['dr.', 'phd', 'professor']):
                 score += 15
 
         return min(score, 100.0)
