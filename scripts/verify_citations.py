@@ -423,4 +423,6 @@ Uses free DOI resolver - no API key needed.
 
 
 if __name__ == '__main__':
+    from _console import ensure_utf8_console
+    ensure_utf8_console()
     main()

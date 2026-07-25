@@ -82,7 +82,7 @@ def compute_source_id(canonical_locator: str) -> str:
 # ---------------------------------------------------------------------------
 
 def append_jsonl(path: str, obj: dict) -> None:
-    with open(path, 'a') as f:
+    with open(path, 'a', encoding='utf-8') as f:
         f.write(json.dumps(obj, ensure_ascii=False) + '\n')
 
 
@@ -90,7 +90,7 @@ def read_jsonl(path: str) -> list[dict]:
     rows = []
     if not os.path.exists(path):
         return rows
-    with open(path) as f:
+    with open(path, encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if line:
@@ -131,7 +131,7 @@ def cmd_init_run(args: argparse.Namespace) -> None:
     }
 
     manifest_path = os.path.join(out_dir, 'run_manifest.json')
-    with open(manifest_path, 'w') as f:
+    with open(manifest_path, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)
         f.write('\n')
 
@@ -139,7 +139,7 @@ def cmd_init_run(args: argparse.Namespace) -> None:
     for name in ('sources', 'evidence', 'claims'):
         p = os.path.join(out_dir, artifact_paths[name])
         if not os.path.exists(p):
-            open(p, 'w').close()
+            open(p, 'w', encoding='utf-8').close()
 
     print(json.dumps({'status': 'ok', 'manifest': manifest_path, 'dir': out_dir}))
 
@@ -297,4 +297,6 @@ def main() -> None:
 
 
 if __name__ == '__main__':
+    from _console import ensure_utf8_console
+    ensure_utf8_console()
     main()

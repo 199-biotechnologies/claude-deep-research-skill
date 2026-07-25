@@ -10,6 +10,26 @@ from pathlib import Path
 from typing import List, Tuple
 
 
+def _has_class(html: str, class_name: str) -> bool:
+    """Check whether any element's `class` attribute contains `class_name`
+    as a whitespace-separated token, e.g. class="section bibliography".
+
+    A plain substring check like `'class="bibliography"' in html` only
+    matches when the attribute value is exactly that one class, and false
+    negatives on multi-class elements such as class="section bibliography".
+
+    Splitting each attribute value on whitespace (rather than a `\\b`-based
+    regex) matters because CSS class names routinely contain hyphens, and
+    `\\b` treats `-` as a word boundary too — a naive
+    `r'\\b{class_name}\\b'` would wrongly match "bibliography" inside
+    "bibliography-content", or "bib-entry" inside "bib-entry-extra".
+    """
+    for match in re.finditer(r'class="([^"]*)"', html):
+        if class_name in match.group(1).split():
+            return True
+    return False
+
+
 class HTMLVerifier:
     """Verify HTML research reports"""
 
@@ -35,8 +55,8 @@ class HTMLVerifier:
 
         # Read files
         try:
-            html_content = self.html_path.read_text()
-            md_content = self.md_path.read_text()
+            html_content = self.html_path.read_text(encoding='utf-8')
+            md_content = self.md_path.read_text(encoding='utf-8')
         except Exception as e:
             self.errors.append(f"Failed to read files: {e}")
             return False
@@ -128,12 +148,14 @@ class HTMLVerifier:
             ('<title>', 'title tag'),
             ('class="header"', 'header section'),
             ('class="content"', 'content section'),
-            ('class="bibliography"', 'bibliography section'),
         ]
 
         for element, name in required_elements:
             if element not in html:
                 self.errors.append(f"Missing {name} in HTML")
+
+        if not _has_class(html, 'bibliography'):
+            self.errors.append("Missing bibliography section in HTML")
 
         # Check for unclosed tags (basic check)
         open_divs = html.count('<div')
@@ -149,8 +171,16 @@ class HTMLVerifier:
         # Extract citations from markdown
         md_citations = set(re.findall(r'\[(\d+)\]', md))
 
-        # Extract citations from HTML (excluding bibliography)
-        html_content = html.split('class="bibliography"')[0] if 'class="bibliography"' in html else html
+        # Extract citations from HTML (excluding bibliography). Uses the
+        # same whitespace-tokenized class match as `_has_class` (a `\b`
+        # regex would wrongly stop at "bibliography-content" too, since
+        # `-` counts as a word boundary).
+        bib_match = None
+        for m in re.finditer(r'class="([^"]*)"', html):
+            if 'bibliography' in m.group(1).split():
+                bib_match = m
+                break
+        html_content = html[:bib_match.start()] if bib_match else html
         html_citations = set(re.findall(r'\[(\d+)\]', html_content))
 
         if len(md_citations) > 0 and len(html_citations) == 0:
@@ -164,9 +194,9 @@ class HTMLVerifier:
     def _check_bibliography(self, html: str, md: str):
         """Verify bibliography is present and formatted"""
         if '## Bibliography' in md:
-            if 'class="bibliography"' not in html:
+            if not _has_class(html, 'bibliography'):
                 self.errors.append("Bibliography section missing from HTML")
-            elif 'class="bib-entry"' not in html:
+            elif not _has_class(html, 'bib-entry'):
                 self.warnings.append("Bibliography present but entries not properly formatted")
 
     def _print_results(self):
@@ -217,4 +247,6 @@ def main():
 
 
 if __name__ == "__main__":
+    from _console import ensure_utf8_console
+    ensure_utf8_console()
     exit(main())

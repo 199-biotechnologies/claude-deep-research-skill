@@ -5,8 +5,75 @@ Properly converts markdown sections to HTML while preserving structure and forma
 """
 
 import re
-from typing import Tuple
+from typing import Dict, Optional, Tuple
 from pathlib import Path
+
+# placeholder -> (language, code)
+FencedBlocks = Dict[str, Tuple[str, str]]
+
+
+def _extract_fenced_code_blocks(markdown: str) -> Tuple[str, FencedBlocks]:
+    """Pull ``` fenced code blocks out of the markdown before any other
+    conversion runs, replacing each with a unique placeholder token.
+
+    The header/bold/paragraph/table converters below all operate on raw
+    text with regexes that know nothing about fenced code — left in place,
+    a fence's ``` markers and any `**`/`#`/`|` characters inside it (very
+    common in a mermaid gantt block, for example) get mangled into broken
+    HTML. Stashing the blocks first and re-inserting them verbatim after
+    conversion (see `_reinsert_fenced_code_blocks`) keeps their content
+    byte-for-byte intact.
+
+    Returns:
+        (markdown_with_placeholders, {placeholder: (language, code)})
+    """
+    blocks: FencedBlocks = {}
+
+    def _stash(match: 're.Match') -> str:
+        language = match.group(1).strip()
+        code = match.group(2)
+        token = f'@@FENCED_CODE_BLOCK_{len(blocks)}@@'
+        blocks[token] = (language, code)
+        return token
+
+    # `\r?\n` so this also matches fences in CRLF (Windows-line-ending) markdown.
+    pattern = re.compile(r'```([a-zA-Z0-9_-]*)\r?\n(.*?)```', re.DOTALL)
+    markdown = pattern.sub(_stash, markdown)
+    return markdown, blocks
+
+
+def _reinsert_fenced_code_blocks(html: str, blocks: FencedBlocks) -> str:
+    """Replace placeholder tokens from `_extract_fenced_code_blocks` with
+    their final HTML. ```mermaid blocks become `<pre class="mermaid">` so
+    mermaid.js (see `render_full_report_html`) can render them; anything
+    else becomes a plain `<pre><code>` block.
+    """
+    for token, (language, code) in blocks.items():
+        escaped = (
+            code.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        )
+        if language.lower() == 'mermaid':
+            # Escaped, not raw `code`: mermaid.js reads the diagram source via
+            # `.textContent`, which the browser un-escapes automatically, so
+            # this is functionally identical for rendering — but avoids
+            # injecting live HTML/script if a diagram's text happens to
+            # contain "</pre>" or "<script>".
+            replacement = f'<pre class="mermaid">\n{escaped}\n</pre>'
+        elif language:
+            replacement = f'<pre><code class="language-{language}">{escaped}</code></pre>'
+        else:
+            replacement = f'<pre><code>{escaped}</code></pre>'
+
+        # The paragraph converter may have wrapped the bare token in <p></p>
+        # since it looks like a plain text line at that point in the pipeline.
+        html = html.replace(f'<p>{token}</p>', replacement)
+        html = html.replace(token, replacement)
+    return html
+
+
+def has_mermaid_block(blocks: FencedBlocks) -> bool:
+    """True if any extracted fenced code block is a ```mermaid diagram."""
+    return any(language.lower() == 'mermaid' for language, _ in blocks.values())
 
 
 def convert_markdown_to_html(markdown_text: str) -> Tuple[str, str]:
@@ -19,16 +86,40 @@ def convert_markdown_to_html(markdown_text: str) -> Tuple[str, str]:
     Returns:
         Tuple of (content_html, bibliography_html)
     """
-    # Split content and bibliography
-    parts = markdown_text.split('## Bibliography')
-    content_md = parts[0]
-    bibliography_md = parts[1] if len(parts) > 1 else ""
+    markdown_text, code_blocks = _extract_fenced_code_blocks(markdown_text)
 
-    # Convert content (everything except bibliography)
+    # Carve out only the "## Bibliography" section (from its heading up to,
+    # but not including, the next top-level "## " heading) rather than
+    # everything from "## Bibliography" to end-of-document. A naive
+    # `.split('## Bibliography')` treats every section that happens to come
+    # after Bibliography in the document (e.g. "## Appendix: Methodology",
+    # "## Report Metadata" — both required by report_template.md) as part
+    # of the bibliography, and _convert_bibliography_section() below only
+    # understands `[N] Title - URL` citation lines, silently dropping or
+    # mangling anything else it's given.
+    # Anchored to the start of a line (not a bare substring search) so this
+    # can't misfire on a paragraph that merely mentions "## Bibliography" in
+    # passing — only a real top-level heading line counts.
+    bib_heading = re.search(r'^## Bibliography.*$', markdown_text, re.MULTILINE)
+    if not bib_heading:
+        content_md = markdown_text
+        bibliography_md = ''
+    else:
+        after_heading = bib_heading.end()
+        next_heading = re.search(r'^## ', markdown_text[after_heading:], re.MULTILINE)
+        bib_end = after_heading + next_heading.start() if next_heading else len(markdown_text)
+
+        bibliography_md = markdown_text[after_heading:bib_end]
+        content_md = markdown_text[:bib_heading.start()] + markdown_text[bib_end:]
+
+    # Convert content (everything except the bibliography span)
     content_html = _convert_content_section(content_md)
 
     # Convert bibliography separately
     bibliography_html = _convert_bibliography_section(bibliography_md)
+
+    content_html = _reinsert_fenced_code_blocks(content_html, code_blocks)
+    bibliography_html = _reinsert_fenced_code_blocks(bibliography_html, code_blocks)
 
     return content_html, bibliography_html
 
@@ -116,22 +207,59 @@ def _convert_content_section(markdown: str) -> str:
 
 
 def _convert_bibliography_section(markdown: str) -> str:
-    """Convert bibliography section to HTML"""
+    """Convert bibliography section to HTML.
+
+    Handles both citation styles seen in practice:
+      - `[1] Title - https://...`                        (dash before a bare URL)
+      - `[1] Author (Year). "Title". Publisher. https://...` (report_template.md's
+        suggested APA-ish style, no dash)
+      - `[1] (n.d.). [Title](https://...)`                (citation_manager.py's
+        own `export-bibliography --style markdown` output, markdown link)
+
+    The previous implementation only matched the first style via a single
+    regex requiring a literal " - " immediately before the URL, so entries
+    in either of the other two styles — including the tool's *own* export
+    format — were never wrapped in `.bib-entry` and fell through to the
+    generic bibliography div unformatted.
+    """
     if not markdown.strip():
         return ""
 
-    html = markdown
+    # One entry per non-blank line: wrap "[N] rest-of-line" before touching
+    # any inline markdown, so the rest-of-line's own [text](url) links (if
+    # any) survive untouched for the markdown-link pass below.
+    wrapped_lines = []
+    for line in markdown.split('\n'):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        m = re.match(r'^\[(\d+)\]\s*(.*)$', stripped)
+        if m:
+            wrapped_lines.append(
+                f'<div class="bib-entry"><span class="bib-number">[{m.group(1)}]</span> {m.group(2)}</div>'
+            )
+        else:
+            wrapped_lines.append(line)
+    html = '\n'.join(wrapped_lines)
 
-    # Convert each [N] citation to a proper bibliography entry
-    # Look for patterns like [1] Title - URL
+    # Markdown links: [text](url) -> <a href="url">text</a>
     html = re.sub(
-        r'\[(\d+)\]\s*(.+?)\s*-\s*(https?://[^\s\)]+)',
-        r'<div class="bib-entry"><span class="bib-number">[\1]</span> <a href="\3" target="_blank">\2</a></div>',
+        r'\[([^\[\]]+)\]\((https?://[^\s\)]+)\)',
+        r'<a href="\2" target="_blank">\1</a>',
         html
     )
 
     # Convert any remaining **bold** sections
     html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html)
+
+    # Linkify any bare URLs not already inside an href="..." attribute
+    # (dash-style and APA-ish entries end in a plain https://... with no
+    # markdown link syntax around it).
+    html = re.sub(
+        r'(?<!href=")(https?://[^\s<)]+)',
+        r'<a href="\1" target="_blank">\1</a>',
+        html
+    )
 
     # Wrap in bibliography content div
     html = f'<div class="bibliography-content">{html}</div>'
@@ -304,27 +432,114 @@ def _close_sections(html: str) -> str:
     return '\n'.join(result)
 
 
+DEFAULT_TEMPLATE = Path(__file__).parent.parent / 'templates' / 'mckinsey_report_template.html'
+
+MERMAID_SCRIPT = (
+    '\n<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>'
+    '\n<script>mermaid.initialize({ startOnLoad: true });</script>\n'
+)
+
+
+def _guess_title(markdown_text: str) -> str:
+    """First `# H1` heading, or `## Executive Summary`'s parent doc has none,
+    so fall back to a generic label rather than leaving `{{TITLE}}` unfilled.
+    """
+    m = re.search(r'^# (.+)$', markdown_text, re.MULTILINE)
+    return m.group(1).strip() if m else 'Research Report'
+
+
+def render_full_report_html(
+    markdown_text: str,
+    template_text: str,
+    *,
+    title: Optional[str] = None,
+    date: str = '',
+    source_count: str = '',
+    metrics_html: str = '',
+) -> str:
+    """Convert `markdown_text` and splice it into the McKinsey report
+    template, returning a complete, ready-to-save HTML document.
+
+    This is the piece `reference/html-generation.md` describes ("Step 3
+    convert MD to HTML" -> "Step 5 replace template placeholders") but that
+    previously had no corresponding code — `main()` only ever printed a
+    1000-character preview of the converted content and never touched the
+    template or wrote a file.
+    """
+    # Re-run the same fence extraction convert_markdown_to_html() does
+    # internally, purely to inspect whether a mermaid block is present (for
+    # the mermaid.js injection below) without duplicating conversion logic.
+    _, code_blocks = _extract_fenced_code_blocks(markdown_text)
+    content_html, bibliography_html = convert_markdown_to_html(markdown_text)
+
+    html = template_text
+    html = html.replace('{{TITLE}}', title if title is not None else _guess_title(markdown_text))
+    html = html.replace('{{DATE}}', date)
+    html = html.replace('{{SOURCE_COUNT}}', str(source_count))
+    html = html.replace('{{METRICS_DASHBOARD}}', metrics_html)
+    html = html.replace('{{CONTENT}}', content_html)
+    html = html.replace('{{BIBLIOGRAPHY}}', bibliography_html)
+
+    if has_mermaid_block(code_blocks) and '</body>' in html:
+        html = html.replace('</body>', MERMAID_SCRIPT + '</body>')
+
+    return html
+
+
 def main():
-    """Test the converter with a sample markdown file"""
-    import sys
+    import argparse
 
-    if len(sys.argv) < 2:
-        print("Usage: python md_to_html.py <markdown_file>")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description='Convert a deep-research markdown report to a complete HTML file.'
+    )
+    parser.add_argument('markdown_file', type=Path, help='Path to the source .md report')
+    parser.add_argument(
+        '--template', type=Path, default=DEFAULT_TEMPLATE,
+        help=f'HTML template with {{{{PLACEHOLDER}}}} slots (default: {DEFAULT_TEMPLATE})',
+    )
+    parser.add_argument(
+        '--out', type=Path, default=None,
+        help='Output .html path (default: same name as markdown_file with .html extension)',
+    )
+    parser.add_argument('--title', default=None, help='Report title (default: first # heading)')
+    parser.add_argument('--date', default='', help='Date string shown in the header')
+    parser.add_argument('--source-count', default='', help='Source count shown in the header')
+    parser.add_argument(
+        '--preview', action='store_true',
+        help='Print a short preview instead of writing a file (legacy debug mode)',
+    )
+    args = parser.parse_args()
 
-    md_file = Path(sys.argv[1])
-    if not md_file.exists():
-        print(f"Error: File {md_file} not found")
-        sys.exit(1)
+    if not args.markdown_file.exists():
+        print(f"Error: File {args.markdown_file} not found")
+        raise SystemExit(1)
 
-    markdown_text = md_file.read_text()
-    content_html, bib_html = convert_markdown_to_html(markdown_text)
+    markdown_text = args.markdown_file.read_text(encoding='utf-8')
 
-    print("=== CONTENT HTML ===")
-    print(content_html[:1000])
-    print("\n=== BIBLIOGRAPHY HTML ===")
-    print(bib_html[:500])
+    if args.preview:
+        content_html, bib_html = convert_markdown_to_html(markdown_text)
+        print("=== CONTENT HTML ===")
+        print(content_html[:1000])
+        print("\n=== BIBLIOGRAPHY HTML ===")
+        print(bib_html[:500])
+        return
+
+    if not args.template.exists():
+        print(f"Error: Template not found: {args.template}")
+        raise SystemExit(1)
+
+    template_text = args.template.read_text(encoding='utf-8')
+    html = render_full_report_html(
+        markdown_text, template_text,
+        title=args.title, date=args.date, source_count=args.source_count,
+    )
+
+    out_path = args.out or args.markdown_file.with_suffix('.html')
+    out_path.write_text(html, encoding='utf-8')
+    print(f"Written: {out_path} ({len(html)} chars)")
 
 
 if __name__ == "__main__":
+    from _console import ensure_utf8_console
+    ensure_utf8_console()
     main()
