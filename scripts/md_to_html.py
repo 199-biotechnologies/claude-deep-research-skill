@@ -5,11 +5,14 @@ Properly converts markdown sections to HTML while preserving structure and forma
 """
 
 import re
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 from pathlib import Path
 
+# placeholder -> (language, code)
+FencedBlocks = Dict[str, Tuple[str, str]]
 
-def _extract_fenced_code_blocks(markdown: str) -> Tuple[str, Dict[str, str]]:
+
+def _extract_fenced_code_blocks(markdown: str) -> Tuple[str, FencedBlocks]:
     """Pull ``` fenced code blocks out of the markdown before any other
     conversion runs, replacing each with a unique placeholder token.
 
@@ -24,7 +27,7 @@ def _extract_fenced_code_blocks(markdown: str) -> Tuple[str, Dict[str, str]]:
     Returns:
         (markdown_with_placeholders, {placeholder: (language, code)})
     """
-    blocks: Dict[str, str] = {}
+    blocks: FencedBlocks = {}
 
     def _stash(match: 're.Match') -> str:
         language = match.group(1).strip()
@@ -33,12 +36,13 @@ def _extract_fenced_code_blocks(markdown: str) -> Tuple[str, Dict[str, str]]:
         blocks[token] = (language, code)
         return token
 
-    pattern = re.compile(r'```([a-zA-Z0-9_-]*)\n(.*?)```', re.DOTALL)
+    # `\r?\n` so this also matches fences in CRLF (Windows-line-ending) markdown.
+    pattern = re.compile(r'```([a-zA-Z0-9_-]*)\r?\n(.*?)```', re.DOTALL)
     markdown = pattern.sub(_stash, markdown)
     return markdown, blocks
 
 
-def _reinsert_fenced_code_blocks(html: str, blocks: Dict[str, str]) -> str:
+def _reinsert_fenced_code_blocks(html: str, blocks: FencedBlocks) -> str:
     """Replace placeholder tokens from `_extract_fenced_code_blocks` with
     their final HTML. ```mermaid blocks become `<pre class="mermaid">` so
     mermaid.js (see `render_full_report_html`) can render them; anything
@@ -49,7 +53,12 @@ def _reinsert_fenced_code_blocks(html: str, blocks: Dict[str, str]) -> str:
             code.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
         )
         if language.lower() == 'mermaid':
-            replacement = f'<pre class="mermaid">\n{code}\n</pre>'
+            # Escaped, not raw `code`: mermaid.js reads the diagram source via
+            # `.textContent`, which the browser un-escapes automatically, so
+            # this is functionally identical for rendering — but avoids
+            # injecting live HTML/script if a diagram's text happens to
+            # contain "</pre>" or "<script>".
+            replacement = f'<pre class="mermaid">\n{escaped}\n</pre>'
         elif language:
             replacement = f'<pre><code class="language-{language}">{escaped}</code></pre>'
         else:
@@ -62,7 +71,7 @@ def _reinsert_fenced_code_blocks(html: str, blocks: Dict[str, str]) -> str:
     return html
 
 
-def has_mermaid_block(blocks: Dict[str, str]) -> bool:
+def has_mermaid_block(blocks: FencedBlocks) -> bool:
     """True if any extracted fenced code block is a ```mermaid diagram."""
     return any(language.lower() == 'mermaid' for language, _ in blocks.values())
 
@@ -88,17 +97,20 @@ def convert_markdown_to_html(markdown_text: str) -> Tuple[str, str]:
     # of the bibliography, and _convert_bibliography_section() below only
     # understands `[N] Title - URL` citation lines, silently dropping or
     # mangling anything else it's given.
-    bib_start = markdown_text.find('## Bibliography')
-    if bib_start == -1:
+    # Anchored to the start of a line (not a bare substring search) so this
+    # can't misfire on a paragraph that merely mentions "## Bibliography" in
+    # passing — only a real top-level heading line counts.
+    bib_heading = re.search(r'^## Bibliography.*$', markdown_text, re.MULTILINE)
+    if not bib_heading:
         content_md = markdown_text
         bibliography_md = ''
     else:
-        after_heading = bib_start + len('## Bibliography')
+        after_heading = bib_heading.end()
         next_heading = re.search(r'^## ', markdown_text[after_heading:], re.MULTILINE)
         bib_end = after_heading + next_heading.start() if next_heading else len(markdown_text)
 
         bibliography_md = markdown_text[after_heading:bib_end]
-        content_md = markdown_text[:bib_start] + markdown_text[bib_end:]
+        content_md = markdown_text[:bib_heading.start()] + markdown_text[bib_end:]
 
     # Convert content (everything except the bibliography span)
     content_html = _convert_content_section(content_md)
@@ -440,7 +452,7 @@ def render_full_report_html(
     markdown_text: str,
     template_text: str,
     *,
-    title: str = None,
+    title: Optional[str] = None,
     date: str = '',
     source_count: str = '',
     metrics_html: str = '',

@@ -97,6 +97,34 @@ class TestFencedCodeBlocks(unittest.TestCase):
         content_html, _ = convert_markdown_to_html(SAMPLE_REPORT)
         self.assertIn('<pre class="mermaid">', content_html)
         self.assertIn('gantt', content_html)
+
+    def test_crlf_fence_is_detected(self):
+        """Windows-authored markdown (CRLF line endings) must still have its
+        fences recognized — the opening ``` line ends in \\r\\n, not just \\n.
+        """
+        md = "```mermaid\r\ngantt\r\n    title CRLF test\r\n```\r\n"
+        stripped, blocks = _extract_fenced_code_blocks(md)
+        self.assertTrue(has_mermaid_block(blocks))
+        self.assertNotIn('```', stripped)
+        (language, code), = blocks.values()
+        self.assertEqual(language, 'mermaid')
+        self.assertIn('CRLF test', code)
+
+    def test_mermaid_block_content_is_html_escaped_not_raw(self):
+        """A mermaid diagram whose text happens to contain "</pre>" or
+        "<script>" must not inject live HTML/script tags into the page —
+        the block has to come out through the same escaping path as any
+        other fenced block, even though mermaid.js can still read the
+        escaped text fine via .textContent.
+        """
+        md = (
+            "## Diagram\n\n"
+            "```mermaid\ngraph TD\n  A[\"</pre><script>alert(1)</script>\"] --> B\n```\n"
+        )
+        content_html, _ = convert_markdown_to_html(md)
+        self.assertNotIn('<script>alert(1)</script>', content_html)
+        self.assertIn('&lt;script&gt;', content_html)
+        self.assertIn('<pre class="mermaid">', content_html)
         # No leftover placeholder tokens or stray backticks.
         self.assertNotIn('@@FENCED_CODE_BLOCK', content_html)
         self.assertNotIn('```', content_html)
@@ -142,6 +170,23 @@ class TestSectionsSurviveBibliographySplit(unittest.TestCase):
         content_html, bibliography_html = convert_markdown_to_html(md)
         self.assertIn('Executive Summary', content_html)
         self.assertEqual(bibliography_html, "")
+
+    def test_mid_paragraph_mention_does_not_trigger_bibliography_split(self):
+        """A prose sentence that merely *mentions* "## Bibliography" (e.g.
+        describing this very bug) must not be mistaken for a real heading —
+        only a line actually starting with "## " counts.
+        """
+        md = (
+            "# Title\n\n"
+            "## Executive Summary\n\n"
+            "The bug: `markdown_text.find('## Bibliography')` can match "
+            "arbitrary text like this sentence, not just a real heading.\n\n"
+            "## Real Section\n\nBody text.\n"
+        )
+        content_html, bibliography_html = convert_markdown_to_html(md)
+        self.assertEqual(bibliography_html, "")
+        self.assertIn('Real Section', content_html)
+        self.assertIn('Body text', content_html)
 
 
 class TestBibliographyEntryStyles(unittest.TestCase):
