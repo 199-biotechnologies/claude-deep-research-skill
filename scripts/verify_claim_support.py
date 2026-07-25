@@ -30,7 +30,7 @@ def read_jsonl(path: str) -> list[dict]:
     rows = []
     if not os.path.exists(path):
         return rows
-    with open(path) as f:
+    with open(path, encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if line:
@@ -39,7 +39,7 @@ def read_jsonl(path: str) -> list[dict]:
 
 
 def write_jsonl(path: str, rows: list[dict]) -> None:
-    with open(path, 'w') as f:
+    with open(path, 'w', encoding='utf-8') as f:
         for row in rows:
             f.write(json.dumps(row, ensure_ascii=False) + '\n')
 
@@ -341,4 +341,6 @@ def main() -> None:
 
 
 if __name__ == '__main__':
+    from _console import ensure_utf8_console
+    ensure_utf8_console()
     main()
