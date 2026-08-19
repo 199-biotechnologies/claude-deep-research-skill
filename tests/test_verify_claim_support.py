@@ -226,5 +226,85 @@ class TestSupportScore(unittest.TestCase):
         self.assertLess(score, 0.35)
 
 
+class TestYearRegex(unittest.TestCase):
+    r"""Regression test for the year-extraction capturing-group bug.
+
+    A regex with exactly one capturing group makes re.findall() return the
+    group's text instead of the full match. YEAR_RE used to be
+    r'\b(19|20)\d{2}\b' (a capturing group around only the century prefix),
+    so extract_years('...1969...') returned {'19'} instead of {'1969'} --
+    meaning any two years from the same century always compared equal.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+        from verify_claim_support import extract_years
+        cls.extract_years = staticmethod(extract_years)
+
+    def test_full_year_extracted_not_century_prefix(self):
+        years = self.extract_years('The treaty was signed in 1969.')
+        self.assertEqual(years, {'1969'})
+
+    def test_different_years_same_century_are_distinct(self):
+        # Both years are '19xx'. Before the fix, extract_years collapsed
+        # both to the single value '19', so these compared equal.
+        self.assertNotEqual(
+            self.extract_years('The mission launched in 1969.'),
+            self.extract_years('The report was published in 1996.'),
+        )
+
+
+class TestStrictGateRequiresSupported(unittest.TestCase):
+    """A factual claim stuck at 'partial' or 'needs_review' must not pass
+    --strict. Evidence being linked is not the same as evidence actually
+    establishing the claim.
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        write_jsonl(os.path.join(self.tmpdir, 'sources.jsonl'), [
+            {'source_id': 'src_001', 'title': 'Source'},
+        ])
+        # Overlaps with the claim just enough to avoid 'unsupported', but
+        # the claim's own count and year are absent from the quote, so it
+        # lands on 'partial' or 'needs_review' rather than 'supported'.
+        write_jsonl(os.path.join(self.tmpdir, 'evidence.jsonl'), [
+            {
+                'evidence_id': 'ev_001',
+                'source_id': 'src_001',
+                'quote': 'The lab published background notes summarizing the project.',
+                'evidence_type': 'direct_quote',
+            },
+        ])
+        write_jsonl(os.path.join(self.tmpdir, 'claims.jsonl'), [
+            {
+                'claim_id': 'clm_001',
+                'section_id': 'finding_1',
+                'text': 'The lab published exactly 42 background notes summarizing the project in 2024.',
+                'claim_type': 'factual',
+                'cited_source_ids': ['src_001'],
+                'evidence_ids': ['ev_001'],
+                'support_status': 'unverified',
+            },
+        ])
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_non_strict_passes(self):
+        out = run_vcs('verify', '--dir', self.tmpdir)
+        self.assertEqual(out['status'], 'pass')
+
+    def test_strict_fails_on_partial_or_needs_review(self):
+        out = run_vcs('verify', '--dir', self.tmpdir, '--strict', expect_fail=True)
+        self.assertEqual(out['status'], 'fail')
+        self.assertGreater(out['factual_not_supported'], 0)
+        # Pre-fix, this specific case slipped through: evidence IS linked
+        # so factual_unsupported stayed 0, and --strict only checked that
+        # field. factual_not_supported (this fix) correctly flags it.
+        self.assertEqual(out['factual_unsupported'], 0)
+
+
 if __name__ == '__main__':
     unittest.main()
