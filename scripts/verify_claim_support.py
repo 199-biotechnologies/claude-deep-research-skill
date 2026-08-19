@@ -9,8 +9,11 @@ CLI subcommands:
 Version 1 is deterministic and cheap: entity, number, date, and
 lexical-overlap checks over stored evidence. No LLM calls.
 
-Only factual claims hard-fail on unsupported status.
-Synthesis/recommendation need traceability but softer thresholds.
+Only factual claims hard-fail on lack of support. In --strict mode a
+factual claim must reach 'supported' — 'partial' and 'needs_review' are
+not a pass for a factual claim under --strict.
+Synthesis/recommendation need traceability but softer thresholds and are
+never gated by --strict.
 """
 
 import argparse
@@ -51,8 +54,13 @@ def write_jsonl(path: str, rows: list[dict]) -> None:
 # Extract numbers (integers and decimals)
 NUMBER_RE = re.compile(r'\b\d+(?:\.\d+)?(?:%|x|X)?\b')
 
-# Extract year-like numbers
-YEAR_RE = re.compile(r'\b(19|20)\d{2}\b')
+# Extract year-like numbers.
+# Note: the capturing group must stay non-capturing. re.findall() on a
+# pattern with exactly one group returns the group's text, not the full
+# match, so a pattern like r'\b(19|20)\d{2}\b' silently extracts '19'/'20'
+# instead of '1969'/'2024' and every year comparison degrades to comparing
+# century prefixes only.
+YEAR_RE = re.compile(r'\b(?:19|20)\d{2}\b')
 
 # Extract capitalized entities (naive NER)
 ENTITY_RE = re.compile(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b')
@@ -242,15 +250,26 @@ def cmd_verify(args: argparse.Namespace) -> None:
 
     # Compute summary
     status_counts = Counter(c.get('support_status') for c in updated_claims)
+    # Strictly 'unsupported' (no evidence linked at all, or zero overlap).
+    # Kept for backward-compatible reporting; see factual_not_supported for
+    # what --strict actually gates on.
     factual_unsupported = sum(
         1 for c in updated_claims
         if c.get('claim_type') == 'factual' and c.get('support_status') == 'unsupported'
     )
+    # A factual claim only counts as passing in --strict mode if it reached
+    # 'supported'. 'partial' and 'needs_review' mean evidence is linked but
+    # doesn't actually establish the claim, so they must not pass strict
+    # verification either.
+    factual_not_supported = sum(
+        1 for c in updated_claims
+        if c.get('claim_type') == 'factual' and c.get('support_status') != 'supported'
+    )
     total_factual = sum(1 for c in updated_claims if c.get('claim_type') == 'factual')
 
-    # Strict mode: fail if any factual claim is unsupported
+    # Strict mode: fail if any factual claim is not fully 'supported'.
     passed = True
-    if args.strict and factual_unsupported > 0:
+    if args.strict and factual_not_supported > 0:
         passed = False
 
     print(json.dumps({
@@ -258,8 +277,10 @@ def cmd_verify(args: argparse.Namespace) -> None:
         'verified': verified,
         'support_status_counts': dict(status_counts),
         'factual_unsupported': factual_unsupported,
+        'factual_not_supported': factual_not_supported,
         'total_factual': total_factual,
         'unsupported_rate': round(factual_unsupported / max(total_factual, 1), 3),
+        'not_supported_rate': round(factual_not_supported / max(total_factual, 1), 3),
     }, indent=2))
 
     if not passed:
@@ -326,7 +347,7 @@ def main() -> None:
     # verify
     p_ver = sub.add_parser('verify', help='Verify claims against evidence')
     p_ver.add_argument('--dir', required=True, help='Run directory')
-    p_ver.add_argument('--strict', action='store_true', help='Exit 1 if any factual claim unsupported')
+    p_ver.add_argument('--strict', action='store_true', help="Exit 1 unless every factual claim reaches 'supported'")
 
     # report
     p_rep = sub.add_parser('report', help='Generate verification report')
